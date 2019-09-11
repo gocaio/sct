@@ -18,160 +18,135 @@
 package main
 
 import (
-        "crypto/tls"
-        "flag"
-        "fmt"
-        "log"
-        "net/http"
-        "strings"
-        "time"
+	"crypto/tls"
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+	"time"
 
-        cp "github.com/fatih/color"
+	"github.com/fatih/color"
 )
 
-// https://github.com/glidasion/h2t
+var (
+	yellow  = color.New(color.Bold, color.FgYellow).SprintFunc()
+	red     = color.New(color.Bold, color.FgRed).SprintFunc()
+	cyan    = color.New(color.Bold, color.FgCyan).SprintFunc()
+	green   = color.New(color.Bold, color.FgGreen).SprintFunc()
+	blue    = color.New(color.Bold, color.FgBlue).SprintFunc()
+	magenta = color.New(color.Bold, color.FgMagenta).SprintFunc()
+	black   = color.New(color.FgBlack, color.BgWhite).SprintFunc()
+)
 
 var secHeaders = map[string]string{
-        "Strict-Transport-Security": "HTTP Strict Transport Security is an excellent feature to support on your site and strengthens your implementation of TLS by getting the User Agent to enforce the use of HTTPS.",
-        "X-Frame-Options":           "X-Frame-Options tells the browser whether you want to allow your site to be framed or not. By preventing a browser from framing your site you can defend against attacks like clickjacking.",
-        "X-Content-Type-Options":    "X-Content-Type-Options stops a browser from trying to MIME-sniff the content type and forces it to stick with the declared content-type. The only valid value for this header is 'X-Content-Type-Options: nosniff'.",
-        "X-XSS-Protection":          "X-XSS-Protection sets the configuration for the cross-site scripting filters built into most browsers. The best configuration is 'X-XSS-Protection: 1; mode=block'.",
-        "Referrer-Policy":           "Referrer Policy is a new header that allows a site to control how much information the browser includes with navigations away from a document and should be set by all sites",
-        "Content-Security-Policy":   "Content Security Policy is an effective measure to protect your site from XSS attacks. By whitelisting sources of approved content, you can prevent the browser from loading malicious assets. Analyse this policy in more detail. You can sign up for a free account on Report URI to collect reports about problems on your site.",
-        "Feature-Policy":            "Feature Policy is a new header that allows a site to control which features and APIs can be used in the browser.",
-        // "Access-Control-Allow-Origin": "",
+	"Strict-Transport-Security": "HTTP Strict Transport Security is an excellent feature to support on your site and strengthens your implementation of TLS by getting the User Agent to enforce the use of HTTPS.",
+	"X-Frame-Options":           "X-Frame-Options tells the browser whether you want to allow your site to be framed or not. By preventing a browser from framing your site you can defend against attacks like clickjacking.",
+	"X-Content-Type-Options":    "X-Content-Type-Options stops a browser from trying to MIME-sniff the content type and forces it to stick with the declared content-type. The only valid value for this header is 'X-Content-Type-Options: nosniff'.",
+	"X-XSS-Protection":          "X-XSS-Protection sets the configuration for the cross-site scripting filters built into most browsers. The best configuration is 'X-XSS-Protection: 1; mode=block'.",
+	"Referrer-Policy":           "Referrer Policy is a new header that allows a site to control how much information the browser includes with navigations away from a document and should be set by all sites",
+	"Content-Security-Policy":   "Content Security Policy is an effective measure to protect your site from XSS attacks. By whitelisting sources of approved content, you can prevent the browser from loading malicious assets. Analyse this policy in more detail. You can sign up for a free account on Report URI to collect reports about problems on your site.",
+	"Feature-Policy":            "Feature Policy is a new header that allows a site to control which features and APIs can be used in the browser.",
+	// "Access-Control-Allow-Origin": "",
 }
 
 var urlFlag = flag.String("url", "", "Url to check")
 var detailFlag = flag.Bool("details", false, "Show detailed info")
 
 func main() {
-        log.SetFlags(0)
+	log.SetFlags(0)
 
-        flag.Parse()
+	flag.Parse()
 
-        if *urlFlag == "" {
-                flag.PrintDefaults()
-                return
-        }
+	if *urlFlag == "" {
+		flag.PrintDefaults()
+		return
+	}
 
-        tr := &http.Transport{
-                TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-        }
-        client := &http.Client{Transport: tr}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 
-        response, err := client.Get(*urlFlag)
-        if err != nil {
-                log.Fatal(err)
-        }
+	response, err := client.Get(*urlFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-        defer response.Body.Close()
+	defer response.Body.Close()
 
-        cp.Magenta("\nChecking \"%s\" for security configuration issues", *urlFlag)
-        cp.Blue("Tested on: %s\n\n", time.Now().Format(time.RFC1123))
+	fmt.Fprintf(color.Output, "\nChecking %v for security configuration issues\n", magenta(*urlFlag))
+	fmt.Fprintf(color.Output, "Tested on: %v \n\n", blue(time.Now().Format(time.RFC1123)))
 
-        checkForHeader(response.Header)
+	checkForHeader(response.Header)
+	checkCookies(response.Cookies())
 
-        fmt.Println("")
-
-        checkCookies(response.Cookies())
-
-        fmt.Println("")
 }
 
+// checkForHeader will check every header value
+// indicating if it's present or not
 func checkForHeader(header map[string][]string) {
-        fmt.Println("")
-        cp.Set(cp.FgBlack)
-        cp.Set(cp.BgWhite)
-        fmt.Println("== HEADER AUDIT ==")
-        cp.Unset()
+	fmt.Fprintf(color.Output, "\n%v", black("== HEADER AUDIT =="))
 
-        for k := range secHeaders {
-                available := false
-                for h := range header {
-                        if strings.ToLower(h) == strings.ToLower(k) {
-                                if len(header[k]) <= 0 {
-                                        header[k] = header[h]
-                                        delete(header, h)
-                                }
+	for k := range secHeaders {
+		available := false
+		for h := range header {
+			if strings.ToLower(h) == strings.ToLower(k) {
+				if len(header[k]) <= 0 {
+					header[k] = header[h]
+					delete(header, h)
+				}
 
-                                available = true
-                                break
-                        }
-                }
+				available = true
+				break
+			}
+		}
 
-                if available {
-                        cp.Green("[✔️] %s (%v)", k, header[k])
-                } else {
-                        cp.Red("[✖️] %s (Not present)", k)
-                }
+		if available {
+			fmt.Fprintf(color.Output, "\n%v", green("[✔️] ", k, " ", header[k]))
+		} else {
+			fmt.Fprintf(color.Output, "\n%v", red("[✖️] ", k, " (Not present)"))
+		}
 
-                if *detailFlag {
-                        cp.Blue("%s", secHeaders[k])
-                        fmt.Println("")
-                }
-        }
+		if *detailFlag {
+			fmt.Fprintf(color.Output, " ➡ %v", yellow(secHeaders[k]))
+		}
+	}
 
-        fmt.Println("")
-        cp.Set(cp.FgBlack)
-        cp.Set(cp.BgWhite)
-        fmt.Println("== RAW HEADERS ==")
-        cp.Unset()
+	fmt.Fprintf(color.Output, "\n\n%v\n", black("== RAW HEADERS =="))
 
-
-
-        for k, v := range header {
-                cp.Set(cp.FgCyan)
-                fmt.Printf("%s: ", k)
-                cp.Unset()
-                for i := range v {
-                        fmt.Printf("%s ", v[i])
-                }
-                fmt.Println("")
-        }
+	for k, v := range header {
+		fmt.Fprintf(color.Output, "%v ", cyan(k, ":"))
+		for i := range v {
+			fmt.Printf("%s\n", v[i])
+		}
+	}
 }
 
+// checkCookies will check if existing cookies
+// have Secure or HttpOnly attribute
 func checkCookies(cookies []*http.Cookie) {
-        cp.Set(cp.FgBlack)
-        cp.Set(cp.BgWhite)
-        fmt.Println("== COOKIE AUDIT ==")
-        cp.Unset()
+	fmt.Fprintf(color.Output, "\n%v", black("== COOKIE AUDIT =="))
 
-        for i := range cookies {
-                c := cookies[i]
+	for i := range cookies {
+		c := cookies[i]
 
-                if !c.Secure || !c.HttpOnly {
-                        cp.Set(cp.FgCyan)
-                        fmt.Printf(c.Name)
-                        cp.Unset()
+		if !c.Secure || !c.HttpOnly {
+			fmt.Fprintf(color.Output, "\n%v: ", cyan(c.Name))
 
-                        if !c.Secure {
-                                fmt.Printf(" Missing \"")
-                                cp.Set(cp.FgRed)
-                                fmt.Printf("Secure")
-                                cp.Unset()
-                                fmt.Printf("\" attribute;")
-                        }
+			if !c.Secure {
+				fmt.Fprintf(color.Output, "Missing %v attribute; ", red("Secure"))
+			}
 
-                        if !c.HttpOnly {
-                                fmt.Printf(" Missing \"")
-                                cp.Set(cp.FgRed)
-                                fmt.Printf("HttpOnly")
-                                cp.Unset()
-                                fmt.Printf("\" attribute;")
-                        }
-                }
+			if !c.HttpOnly {
+				fmt.Fprintf(color.Output, "Missing %v attribute; ", red("HttpOnly"))
+			}
+		}
+	}
 
-                fmt.Println("")
-        }
+	fmt.Fprintf(color.Output, "\n\n%v\n", black("== RAW COOKIES =="))
 
-        fmt.Println("")
-        cp.Set(cp.FgBlack)
-        cp.Set(cp.BgWhite)
-        fmt.Println("== RAW COOKIES ==")
-        cp.Unset()
-
-        for i := range cookies {
-                fmt.Println(cookies[i])
-        }
+	for i := range cookies {
+		fmt.Printf("%v \n", cookies[i])
+	}
 }
