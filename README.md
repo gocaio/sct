@@ -1,5 +1,7 @@
 # sct
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/gocaio/sct)](https://goreportcard.com/report/github.com/gocaio/sct)
+
 Security checks for http headers and cookies
 
 ## USAGE
