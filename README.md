@@ -6,6 +6,20 @@ Security checks for http headers and cookies
 
 ## USAGE
 
+Options:
+
+```
+$ sct -h
+ -details
+    	Show detailed info
+  -url string
+    	Url to check
+  -urlList string
+    	List with Url to check
+```
+
+Scan single URL:
+
 ```
 $ sct -url https://google.com
 
