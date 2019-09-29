@@ -151,3 +151,4 @@ build/*
 
 # rsrc syso output
 *.syso
+list.txt

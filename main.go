@@ -18,11 +18,13 @@
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -51,6 +53,7 @@ var secHeaders = map[string]string{
 }
 
 var urlFlag = flag.String("url", "", "Url to check")
+var urlListFlag = flag.String("urlList", "", "List with Url to check")
 var detailFlag = flag.Bool("details", false, "Show detailed info")
 
 func main() {
@@ -58,28 +61,52 @@ func main() {
 
 	flag.Parse()
 
-	if *urlFlag == "" {
+	if *urlFlag == "" && *urlListFlag == "" {
 		flag.PrintDefaults()
 		return
 	}
 
+	if *urlListFlag != "" {
+		file, err := os.Open(*urlListFlag)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			fmt.Fprintf(color.Output, "\nChecking %v for security configuration issues\n", magenta(scanner.Text()))
+			fmt.Fprintf(color.Output, "Tested on: %v \n\n", blue(time.Now().Format(time.RFC1123)))
+			var response = MakeRequest(scanner.Text())
+			checkForHeader(response.Header)
+			checkCookies(response.Cookies())
+			fmt.Fprintf(color.Output, "\n%v\n", yellow("*********"))
+		}
+	} else {
+		fmt.Fprintf(color.Output, "\nChecking %v for security configuration issues\n", magenta(*urlFlag))
+		fmt.Fprintf(color.Output, "Tested on: %v \n\n", blue(time.Now().Format(time.RFC1123)))
+		var response = MakeRequest(*urlFlag)
+		checkForHeader(response.Header)
+		checkCookies(response.Cookies())
+	}
+
+}
+
+// MakeRequest will do the GET request
+// to retrieve the headers
+func MakeRequest(host string) *http.Response {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
 
-	response, err := client.Get(*urlFlag)
+	response, err := client.Get(host)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer response.Body.Close()
-
-	fmt.Fprintf(color.Output, "\nChecking %v for security configuration issues\n", magenta(*urlFlag))
-	fmt.Fprintf(color.Output, "Tested on: %v \n\n", blue(time.Now().Format(time.RFC1123)))
-
-	checkForHeader(response.Header)
-	checkCookies(response.Cookies())
+	return response
 
 }
 
