@@ -2,7 +2,7 @@
 BINARY=sct
 APPNAME=SCT
 TARGET=all
-VERSION=`git tag --list | head -1`
+VERSION=`git tag --list | tail -1`
 
 # Build stuff
 BUILD_TIME=`date +%FT%T%z`
