@@ -130,9 +130,9 @@ func checkForHeader(header map[string][]string) {
 		}
 
 		if available {
-			fmt.Fprintf(color.Output, "\n%v", green("[✔️] ", k, " ", header[k]))
+			fmt.Fprintf(color.Output, "\n%v", green("[✔] ", k, " ", header[k]))
 		} else {
-			fmt.Fprintf(color.Output, "\n%v", red("[✖️] ", k, " (Not present)"))
+			fmt.Fprintf(color.Output, "\n%v", red("[✖] ", k, " (Not present)"))
 		}
 
 		if *detailFlag {
