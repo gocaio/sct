@@ -9,7 +9,8 @@ BUILD_TIME=`date +%FT%T%z`
 BUILD=`git rev-parse HEAD`
 LDFLAGS=-ldflags="\
 	-s \
-	-w "
+	-w \
+	-X main.version=`git describe --tags`
 
 sources := $(wildcard *.go)
 
@@ -25,7 +26,7 @@ release: darwin linux windows
 
 .PHONY: install
 install: 
-	go build -o $(BINARY)
+	go build ${LDFLAGS} -o $(BINARY)
 	mv $(BINARY) $(GOPATH)/bin
 
 .PHONY: dev

@@ -45,21 +45,28 @@ var secHeaders = map[string]string{
 	"Strict-Transport-Security": "HTTP Strict Transport Security is an excellent feature to support on your site and strengthens your implementation of TLS by getting the User Agent to enforce the use of HTTPS.",
 	"X-Frame-Options":           "X-Frame-Options tells the browser whether you want to allow your site to be framed or not. By preventing a browser from framing your site you can defend against attacks like clickjacking.",
 	"X-Content-Type-Options":    "X-Content-Type-Options stops a browser from trying to MIME-sniff the content type and forces it to stick with the declared content-type. The only valid value for this header is 'X-Content-Type-Options: nosniff'.",
-	"X-XSS-Protection":          "X-XSS-Protection sets the configuration for the cross-site scripting filters built into most browsers. The best configuration is 'X-XSS-Protection: 1; mode=block'.",
-	"Referrer-Policy":           "Referrer Policy is a new header that allows a site to control how much information the browser includes with navigations away from a document and should be set by all sites",
-	"Content-Security-Policy":   "Content Security Policy is an effective measure to protect your site from XSS attacks. By whitelisting sources of approved content, you can prevent the browser from loading malicious assets. Analyse this policy in more detail. You can sign up for a free account on Report URI to collect reports about problems on your site.",
-	"Feature-Policy":            "Feature Policy is a new header that allows a site to control which features and APIs can be used in the browser.",
+	//"X-XSS-Protection":          "X-XSS-Protection sets the configuration for the cross-site scripting filters built into most browsers. The best configuration is 'X-XSS-Protection: 1; mode=block'.",
+	"Referrer-Policy":         "Referrer Policy is a new header that allows a site to control how much information the browser includes with navigations away from a document and should be set by all sites",
+	"Content-Security-Policy": "Content Security Policy is an effective measure to protect your site from XSS attacks. By whitelisting sources of approved content, you can prevent the browser from loading malicious assets. Analyse this policy in more detail. You can sign up for a free account on Report URI to collect reports about problems on your site.",
+	//"Feature-Policy":            "Feature Policy is a new header that allows a site to control which features and APIs can be used in the browser.",
 	// "Access-Control-Allow-Origin": "",
 }
 
 var urlFlag = flag.String("url", "", "Url to check")
 var urlListFlag = flag.String("urlList", "", "List with Url to check")
 var detailFlag = flag.Bool("details", false, "Show detailed info")
+var versionFlag = flag.Bool("version", false, "Show version")
+var version string
 
 func main() {
 	log.SetFlags(0)
 
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("\nSCT %v\n\n", version)
+		return
+	}
 
 	if *urlFlag == "" && *urlListFlag == "" {
 		flag.PrintDefaults()
