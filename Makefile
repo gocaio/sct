@@ -10,7 +10,7 @@ BUILD=`git rev-parse HEAD`
 LDFLAGS=-ldflags="\
 	-s \
 	-w \
-	-X main.version=`git describe --tags`
+	-X main.version=`git describe --tags`"
 
 sources := $(wildcard *.go)
 
